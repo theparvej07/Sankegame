@@ -1,0 +1,165 @@
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import java.util.ArrayList;
+import java.util.Random;
+
+public class SnakeGame extends JPanel implements ActionListener, KeyListener {
+    private static final int WIDTH = 400;
+    private static final int HEIGHT = 400;
+    private static final int UNIT_SIZE = 20;
+    private static final int GAME_UNITS = (WIDTH * HEIGHT) / (UNIT_SIZE * UNIT_SIZE);
+    private static final int DELAY = 75;
+    
+    private final ArrayList<Point> snakeBody = new ArrayList<>();
+    private int snakeLength = 1;
+    private int appleX;
+    private int appleY;
+    private char direction = 'R';
+    private boolean running = false;
+    private boolean gameOver = false;
+
+    public SnakeGame() {
+        setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        setBackground(Color.black);
+        setFocusable(true);
+        addKeyListener(this);
+        startGame();
+    }
+
+    public void startGame() {
+        snakeBody.clear();
+        snakeBody.add(new Point(0, 0));
+        spawnApple();
+        running = true;
+        gameOver = false;
+        direction = 'R';
+        Timer timer = new Timer(DELAY, this);
+        timer.start();
+    }
+
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        draw(g);
+    }
+
+    public void draw(Graphics g) {
+        if (running) {
+            // Draw snake
+            for (Point point : snakeBody) {
+                g.setColor(Color.green);
+                g.fillRect(point.x, point.y, UNIT_SIZE, UNIT_SIZE);
+            }
+
+            // Draw apple
+            g.setColor(Color.red);
+            g.fillRect(appleX, appleY, UNIT_SIZE, UNIT_SIZE);
+        } else if (gameOver) {
+            g.setColor(Color.red);
+            g.setFont(new Font("Arial", Font.PLAIN, 40));
+            g.drawString("Game Over", 140, 200);
+        }
+    }
+
+    public void move() {
+        for (int i = snakeBody.size() - 1; i > 0; i--) {
+            snakeBody.get(i).setLocation(snakeBody.get(i - 1));
+        }
+
+        int headX = snakeBody.get(0).x;
+        int headY = snakeBody.get(0).y;
+
+        switch (direction) {
+            case 'U':
+                headY -= UNIT_SIZE;
+                break;
+            case 'D':
+                headY += UNIT_SIZE;
+                break;
+            case 'L':
+                headX -= UNIT_SIZE;
+                break;
+            case 'R':
+                headX += UNIT_SIZE;
+                break;
+        }
+
+        snakeBody.get(0).setLocation(headX, headY);
+    }
+
+    public void checkAppleCollision() {
+        if (snakeBody.get(0).equals(new Point(appleX, appleY))) {
+            snakeLength++;
+            spawnApple();
+        }
+    }
+
+    public void checkCollision() {
+        // Check if snake collides with walls or itself
+        int headX = snakeBody.get(0).x;
+        int headY = snakeBody.get(0).y;
+
+        if (headX < 0 || headX >= WIDTH || headY < 0 || headY >= HEIGHT) {
+            running = false;
+            gameOver = true;
+        }
+
+        for (int i = 1; i < snakeBody.size(); i++) {
+            if (snakeBody.get(i).equals(snakeBody.get(0))) {
+                running = false;
+                gameOver = true;
+                break;
+            }
+        }
+    }
+
+    public void spawnApple() {
+        Random random = new Random();
+        appleX = random.nextInt((WIDTH / UNIT_SIZE)) * UNIT_SIZE;
+        appleY = random.nextInt((HEIGHT / UNIT_SIZE)) * UNIT_SIZE;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (running) {
+            move();
+            checkAppleCollision();
+            checkCollision();
+            repaint();
+        }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        int key = e.getKeyCode();
+        if ((key == KeyEvent.VK_LEFT) && (direction != 'R')) {
+            direction = 'L';
+        } else if ((key == KeyEvent.VK_RIGHT) && (direction != 'L')) {
+            direction = 'R';
+        } else if ((key == KeyEvent.VK_UP) && (direction != 'D')) {
+            direction = 'U';
+        } else if ((key == KeyEvent.VK_DOWN) && (direction != 'U')) {
+            direction = 'D';
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+    }
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Snake Game");
+        SnakeGame snakeGame = new SnakeGame();
+        frame.add(snakeGame);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        snakeGame.startGame();
+    }
+}
